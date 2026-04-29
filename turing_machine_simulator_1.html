@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turing Machine Simulator — Theory of Computation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=JetBrains+Mono:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:        #0e0c0a;
+    --paper:      #0f0d0b;
+    --paper-2:    #16130f;
+    --surface:    #1c1814;
+    --surface-2:  #252018;
+    --rule:       #3a3226;
+    --rule-soft:  #2a241c;
+    --cream:      #f0e8d8;
+    --cream-dim:  #c9bfaa;
+    --cream-mute: #8a7f6a;
+    --amber:      #e8a951;
+    --amber-soft: #c98a3a;
+    --amber-glow: rgba(232, 169, 81, 0.35);
+    --teal:       #5ec8b5;
+    --emerald:    #7ec87a;
+    --crimson:    #d85858;
+    --plum:       #c187d0;
+
+    --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino', serif;
+    --font-body:    'Inter Tight', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--paper);
+    color: var(--cream);
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Paper grain + vignette */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 15% 8%, rgba(232, 169, 81, 0.08), transparent 55%),
+      radial-gradient(ellipse at 85% 92%, rgba(94, 200, 181, 0.05), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 2px, rgba(255,255,255,0.008) 2px 3px);
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: overlay;
+  }
+
+  .container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ──────────────── HEADER ──────────────── */
+  header {
+    padding: clamp(2rem, 6vw, 4.5rem) 0 clamp(2rem, 5vw, 3.5rem);
+    border-bottom: 1px solid var(--rule-soft);
+    position: relative;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 1.5rem;
+  }
+
+  .eyebrow::before {
+    content: '';
+    width: 28px;
+    height: 1px;
+    background: var(--amber);
+  }
+
+  header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 7vw, 5.25rem);
+    font-weight: 500;
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    color: var(--cream);
+    font-variation-settings: "opsz" 144, "SOFT" 60;
+  }
+
+  header h1 em {
+    font-style: italic;
+    color: var(--amber);
+    font-weight: 400;
+  }
+
+  header .lede {
+    margin-top: 1.5rem;
+    max-width: 620px;
+    font-size: clamp(1rem, 1.6vw, 1.15rem);
+    color: var(--cream-dim);
+    line-height: 1.55;
+  }
+
+  .header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    margin-top: 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--cream-mute);
+  }
+
+  .header-meta span strong {
+    color: var(--cream);
+    font-weight: 500;
+  }
+
+  /* ──────────────── SECTION HEADS ──────────────── */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 1.25rem;
+    margin: clamp(3rem, 6vw, 4.5rem) 0 1.5rem;
+  }
+
+  .section-num {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    padding-top: 0.4rem;
+  }
+
+  .section-head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3vw, 2.25rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--cream);
+    flex: 1;
+  }
+
+  .section-head h2 em {
+    font-style: italic;
+    color: var(--amber);
+  }
+
+  /* ──────────────── CARDS ──────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+    padding: clamp(1.25rem, 2.5vw, 2rem);
+    position: relative;
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .card-head h3 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--cream);
+    letter-spacing: -0.01em;
+  }
+
+  .card-head .card-tag {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--cream-mute);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ──────────────── INTRO ──────────────── */
+  .intro {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+  }
+
+  .intro p {
+    color: var(--cream-dim);
+    font-size: 0.98rem;
+    line-height: 1.7;
+  }
+
+  .intro p + p { margin-top: 1rem; }
+
+  .intro .pull {
+    border-left: 2px solid var(--amber);
+    padding: 0.25rem 0 0.25rem 1.5rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--cream);
+  }
+
+  .intro .pull cite {
+    display: block;
+    margin-top: 0.75rem;
+    font-family: var(--font-mono);
+    font-style: normal;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--cream-mute);
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 780px) {
+    .intro { grid-template-columns: 1fr; }
+  }
+
+  /* ──────────────── SIMULATOR ──────────────── */
+  .simulator {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+  }
+
+  /* Config row */
+  .config-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 780px) {
+    .config-row { grid-template-columns: 1fr; }
+  }
+
+  .field label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cream-mute);
+    margin-bottom: 0.6rem;
+  }
+
+  .field select,
+  .field input[type="text"] {
+    width: 100%;
+    background: var(--paper-2);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    color: var(--cream);
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    padding: 0.8rem 1rem;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .field select:focus,
+  .field input[type="text"]:focus {
+    outline: none;
+    border-color: var(--amber);
+    background: var(--surface-2);
+  }
+
+  .field select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23e8a951' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .input-row input { flex: 1; }
+
+  .example-description {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    background: var(--paper-2);
+    border-left: 2px solid var(--amber);
+    font-size: 0.92rem;
+    color: var(--cream-dim);
+  }
+
+  .example-description strong {
+    color: var(--cream);
+    font-weight: 500;
+  }
+
+  .example-description .alphabet {
+    display: inline-flex;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+
+  .example-description .alphabet code {
+    background: var(--surface-2);
+    padding: 0.15rem 0.5rem;
+    border-radius: 2px;
+    color: var(--amber);
+    border: 1px solid var(--rule);
+  }
+
+  /* Status strip */
+  .status-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule-soft);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  @media (max-width: 640px) {
+    .status-strip { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .status-item {
+    background: var(--surface);
+    padding: 1rem 1.25rem;
+  }
+
+  .status-item .status-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--cream-mute);
+    margin-bottom: 0.45rem;
+  }
+
+  .status-item .status-value {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--cream);
+  }
+
+  .status-value.state-q  { color: var(--amber); }
+  .status-value.state-ok { color: var(--emerald); }
+  .status-value.state-no { color: var(--crimson); }
+  .status-value.state-run { color: var(--teal); }
+  .status-value.state-ready { color: var(--cream-dim); }
+
+  /* Tape */
+  .tape-wrap {
+    padding: 2rem 0 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tape-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--cream-mute);
+    margin-bottom: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .tape-label .head-pos {
+    color: var(--amber);
+  }
+
+  .tape-container {
+    position: relative;
+    padding: 2rem 0 0.5rem;
+  }
+
+  .tape-pointer {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2rem;
+    color: var(--amber);
+    line-height: 1;
+    animation: hover 1.4s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px var(--amber-glow));
+  }
+
+  @keyframes hover {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-3px); }
+  }
+
+  .tape-pointer::after {
+    content: 'HEAD';
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    color: var(--amber);
+    margin-top: 0.2rem;
+    text-align: center;
+  }
+
+  .tape {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    padding: 0.5rem 0;
+    min-height: 62px;
+  }
+
+  .cell {
+    min-width: 50px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--paper-2);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--cream-dim);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+
+  .cell.blank {
+    color: var(--cream-mute);
+    opacity: 0.5;
+  }
+
+  .cell.head {
+    background: var(--amber);
+    color: var(--ink);
+    border-color: var(--amber);
+    transform: scale(1.1);
+    box-shadow:
+      0 0 0 1px var(--amber),
+      0 0 30px var(--amber-glow),
+      0 8px 24px rgba(232, 169, 81, 0.25);
+    z-index: 2;
+    opacity: 1;
+  }
+
+  .cell.just-written {
+    animation: flash-write 0.5s ease-out;
+  }
+
+  @keyframes flash-write {
+    0% { box-shadow: 0 0 0 0 var(--amber); }
+    50% { box-shadow: 0 0 0 4px var(--amber-glow); }
+    100% { box-shadow: 0 0 0 1px var(--amber); }
+  }
+
+  .cell-index {
+    position: absolute;
+    top: -1.3rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--cream-mute);
+    opacity: 0.5;
+  }
+
+  /* Controls */
+  .controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 1.25rem;
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+  }
+
+  button {
+    background: var(--surface-2);
+    color: var(--cream);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.65rem 1.1rem;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  button:hover:not(:disabled) {
+    background: var(--surface);
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  button:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  button.primary {
+    background: var(--amber);
+    color: var(--ink);
+    border-color: var(--amber);
+    font-weight: 600;
+  }
+
+  button.primary:hover:not(:disabled) {
+    background: var(--amber-soft);
+    color: var(--ink);
+    border-color: var(--amber-soft);
+  }
+
+  button.ghost {
+    background: transparent;
+  }
+
+  .btn-icon {
+    width: 12px;
+    height: 12px;
+    display: inline-block;
+  }
+
+  .speed-control {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cream-mute);
+  }
+
+  .speed-control input[type="range"] {
+    width: 110px;
+    accent-color: var(--amber);
+  }
+
+  .speed-value {
+    min-width: 2.5ch;
+    color: var(--amber);
+    text-align: right;
+  }
+
+  @media (max-width: 640px) {
+    .speed-control { margin-left: 0; width: 100%; justify-content: space-between; }
+  }
+
+  /* Info grid: transitions + log */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+
+  @media (max-width: 900px) {
+    .info-grid { grid-template-columns: 1fr; }
+  }
+
+  .transitions-table {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    width: 100%;
+    border-collapse: collapse;
+    max-height: 340px;
+    display: block;
+    overflow-y: auto;
+  }
+
+  .transitions-table thead {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 1;
+  }
+
+  .transitions-table th,
+  .transitions-table td {
+    padding: 0.55rem 0.6rem;
+    text-align: left;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .transitions-table th {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cream-mute);
+    font-weight: 500;
+  }
+
+  .transitions-table td {
+    color: var(--cream-dim);
+  }
+
+  .transitions-table td.state   { color: var(--amber); }
+  .transitions-table td.symbol  { color: var(--teal); }
+  .transitions-table td.arrow   { color: var(--cream-mute); text-align: center; width: 1.5rem; }
+  .transitions-table td.move    { color: var(--plum); }
+
+  .transitions-table tr.active-transition {
+    background: rgba(232, 169, 81, 0.12);
+    animation: pulse-row 0.6s ease-out;
+  }
+
+  .transitions-table tr.active-transition td {
+    color: var(--cream);
+  }
+
+  @keyframes pulse-row {
+    0% { background: rgba(232, 169, 81, 0.3); }
+    100% { background: rgba(232, 169, 81, 0.12); }
+  }
+
+  /* ──────────────── STATE DIAGRAM ──────────────── */
+  .state-diagram-wrap {
+    position: relative;
+    width: 100%;
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 3px;
+    padding: 0.75rem;
+    overflow: hidden;
+  }
+
+  .state-diagram-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-height: 520px;
+  }
+
+  .sd-node-circle {
+    fill: var(--surface);
+    stroke: var(--rule);
+    stroke-width: 1.5;
+    transition: fill 0.3s, stroke 0.3s, filter 0.3s;
+  }
+
+  .sd-node.start .sd-node-circle { stroke: var(--amber); }
+
+  .sd-node.accept .sd-node-circle { stroke: var(--emerald); }
+  .sd-node.accept .sd-node-inner {
+    fill: none;
+    stroke: var(--emerald);
+    stroke-width: 1.5;
+  }
+
+  .sd-node.reject .sd-node-circle { stroke: var(--crimson); }
+  .sd-node.reject .sd-node-inner {
+    fill: none;
+    stroke: var(--crimson);
+    stroke-width: 1.5;
+  }
+
+  .sd-node.active .sd-node-circle {
+    fill: var(--amber);
+    stroke: var(--amber);
+    filter: drop-shadow(0 0 14px var(--amber-glow));
+  }
+  .sd-node.active .sd-node-label { fill: var(--ink); }
+
+  .sd-node.active.accept .sd-node-circle {
+    fill: var(--emerald);
+    stroke: var(--emerald);
+    filter: drop-shadow(0 0 14px rgba(126, 200, 122, 0.55));
+  }
+  .sd-node.active.accept .sd-node-label { fill: var(--ink); }
+  .sd-node.active.accept .sd-node-inner { stroke: var(--paper); }
+
+  .sd-node.active.reject .sd-node-circle {
+    fill: var(--crimson);
+    stroke: var(--crimson);
+    filter: drop-shadow(0 0 14px rgba(216, 88, 88, 0.55));
+  }
+  .sd-node.active.reject .sd-node-label { fill: var(--ink); }
+  .sd-node.active.reject .sd-node-inner { stroke: var(--paper); }
+
+  .sd-node-label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    fill: var(--cream);
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+    transition: fill 0.25s;
+  }
+
+  .sd-edge {
+    fill: none;
+    stroke: var(--rule);
+    stroke-width: 1.5;
+    transition: stroke 0.3s, stroke-width 0.3s, filter 0.3s;
+  }
+
+  .sd-edge.active {
+    stroke: var(--amber);
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 5px var(--amber-glow));
+  }
+
+  .sd-edge-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    fill: var(--cream-dim);
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+    transition: fill 0.3s, font-weight 0.3s;
+  }
+
+  .sd-edge-label.active {
+    fill: var(--amber);
+    font-weight: 600;
+  }
+
+  .sd-edge-label-bg {
+    fill: var(--paper-2);
+    stroke: none;
+  }
+
+  .sd-start-label {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    fill: var(--amber);
+    letter-spacing: 0.12em;
+  }
+
+  .sd-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-top: 0.75rem;
+    padding: 0.65rem 0.9rem;
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: var(--cream-mute);
+  }
+
+  .sd-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+  }
+
+  .sd-legend-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1.5px solid var(--cream-mute);
+    flex-shrink: 0;
+  }
+
+  .sd-legend-swatch.double {
+    box-shadow: inset 0 0 0 2px var(--paper-2), inset 0 0 0 3px currentColor;
+  }
+
+  .sd-legend-item code {
+    font-family: var(--font-mono);
+    color: var(--cream);
+    background: var(--surface);
+    padding: 0.1rem 0.4rem;
+    border-radius: 2px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .log {
+    max-height: 340px;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    padding-right: 0.25rem;
+  }
+
+  .log-entry {
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    gap: 0.75rem;
+    align-items: start;
+  }
+
+  .log-entry:last-child {
+    border-bottom: none;
+  }
+
+  .log-entry .step-num {
+    color: var(--cream-mute);
+    font-size: 0.7rem;
+    padding-top: 0.15rem;
+  }
+
+  .log-entry .log-body {
+    color: var(--cream-dim);
+    line-height: 1.55;
+  }
+
+  .log-entry .log-body .k { color: var(--amber); }
+  .log-entry .log-body .v { color: var(--teal); }
+  .log-entry .log-body .m { color: var(--plum); }
+
+  .log-entry.halt-accept {
+    background: rgba(126, 200, 122, 0.08);
+    border-left: 2px solid var(--emerald);
+    padding-left: 0.75rem;
+    margin: 0.3rem -0.75rem;
+  }
+
+  .log-entry.halt-reject {
+    background: rgba(216, 88, 88, 0.08);
+    border-left: 2px solid var(--crimson);
+    padding-left: 0.75rem;
+    margin: 0.3rem -0.75rem;
+  }
+
+  .log-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--cream-mute);
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--amber-soft); }
+
+  /* ──────────────── THEORY ──────────────── */
+  .theory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+  }
+
+  .theory-card {
+    background: var(--surface);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+    padding: 1.5rem;
+    position: relative;
+  }
+
+  .theory-card .ordinal {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 2.5rem;
+    color: var(--amber);
+    line-height: 1;
+    opacity: 0.7;
+  }
+
+  .theory-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--cream);
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .theory-card p {
+    font-size: 0.92rem;
+    color: var(--cream-dim);
+    line-height: 1.6;
+  }
+
+  .theory-card code {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    background: var(--paper-2);
+    padding: 0.1rem 0.4rem;
+    border-radius: 2px;
+    color: var(--amber);
+  }
+
+  /* Tuple display */
+  .tuple {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    line-height: 2;
+  }
+
+  .tuple .tuple-eq {
+    color: var(--cream);
+    font-size: 1.05rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tuple .tuple-eq .brace { color: var(--amber); }
+
+  .tuple dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.4rem 1.5rem;
+  }
+
+  .tuple dt {
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .tuple dd {
+    color: var(--cream-dim);
+  }
+
+  .tuple dd b { color: var(--cream); font-weight: 500; }
+
+  /* ──────────────── EXPLAIN / STEPS ──────────────── */
+  .explain-list {
+    counter-reset: step;
+    list-style: none;
+    margin-top: 1.5rem;
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .explain-list li {
+    counter-increment: step;
+    padding: 1.25rem 1.5rem 1.25rem 4rem;
+    background: var(--surface);
+    border: 1px solid var(--rule-soft);
+    border-radius: 4px;
+    position: relative;
+  }
+
+  .explain-list li::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute;
+    left: 1.25rem;
+    top: 1.15rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .explain-list li h4 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--cream);
+    margin-bottom: 0.4rem;
+  }
+
+  .explain-list li p {
+    color: var(--cream-dim);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .explain-list li code {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    background: var(--paper-2);
+    padding: 0.1rem 0.4rem;
+    border-radius: 2px;
+    color: var(--amber);
+  }
+
+  /* ──────────────── FOOTER ──────────────── */
+  footer {
+    margin-top: clamp(3rem, 6vw, 4.5rem);
+    padding: 2rem 0;
+    border-top: 1px solid var(--rule-soft);
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--cream-mute);
+    text-transform: uppercase;
+  }
+
+  footer .asterism {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--amber);
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.5em;
+  }
+
+  /* ──────────────── ANIMATIONS ──────────────── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-in { animation: fadeInUp 0.5s ease-out both; }
+
+  /* Banner */
+  .halt-banner {
+    padding: 1rem 1.25rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: fadeInUp 0.4s ease-out;
+  }
+
+  .halt-banner.accepted {
+    background: rgba(126, 200, 122, 0.12);
+    border: 1px solid var(--emerald);
+    color: var(--emerald);
+  }
+
+  .halt-banner.rejected {
+    background: rgba(216, 88, 88, 0.12);
+    border: 1px solid var(--crimson);
+    color: var(--crimson);
+  }
+
+  .halt-banner .halt-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+
+  .halt-banner.accepted .halt-icon { background: var(--emerald); color: var(--ink); }
+  .halt-banner.rejected .halt-icon { background: var(--crimson); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ═══════════ HEADER ═══════════ -->
+  <header>
+    <div class="eyebrow">Theory of Computation · Interactive Lab</div>
+    <h1>The Turing <em>Machine</em><br>Simulator</h1>
+    <p class="lede">A working model of the most fundamental computing device ever conceived. Load an input, step through the tape, and watch computation unfold — one transition at a time.</p>
+    <div class="header-meta">
+      <span>Model · <strong>Deterministic, Single-Tape</strong></span>
+      <span>Designed after · <strong>Alan M. Turing, 1936</strong></span>
+      <span>Moves · <strong>Left / Right</strong></span>
+    </div>
+  </header>
+
+  <!-- ═══════════ INTRO ═══════════ -->
+  <div class="section-head">
+    <span class="section-num">§ I</span>
+    <h2>What is a <em>Turing Machine</em>?</h2>
+  </div>
+
+  <div class="intro">
+    <div>
+      <p>A Turing machine is a <strong style="color:var(--cream)">mathematical model of computation</strong> — not a physical object, but an idea. It imagines a device with an infinite paper tape, a read/write head that can move left or right, and a small set of rules (a <em>finite state control</em>) that decides what to do next.</p>
+      <p>That minimal setup is enough to compute anything a modern computer can compute. This is the Church–Turing thesis, and it is the reason this simple abstraction underlies every programming language, operating system, and algorithm you will ever study.</p>
+    </div>
+    <div class="pull">
+      “It is possible to invent a single machine which can be used to compute any computable sequence.”
+      <cite>— A. M. Turing, On Computable Numbers, 1936</cite>
+    </div>
+  </div>
+
+  <!-- ═══════════ SIMULATOR ═══════════ -->
+  <div class="section-head">
+    <span class="section-num">§ II</span>
+    <h2>The <em>Simulator</em></h2>
+  </div>
+
+  <div class="simulator">
+
+    <!-- Configuration -->
+    <div class="card">
+      <div class="card-head">
+        <h3>Machine Configuration</h3>
+        <span class="card-tag">Select &amp; Load</span>
+      </div>
+
+      <div class="config-row">
+        <div class="field">
+          <label for="example-select">Example Machine</label>
+          <select id="example-select">
+            <option value="binaryIncrement">Binary Increment — adds 1 to a binary number</option>
+            <option value="anbn">a^n b^n Recognizer — accepts matched a's and b's</option>
+            <option value="palindrome">Palindrome Checker — binary palindromes</option>
+            <option value="unaryAddition">Unary Addition — computes sum of two unary numbers</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="input-field">Input String</label>
+          <div class="input-row">
+            <input type="text" id="input-field" placeholder="Enter input..." autocomplete="off" spellcheck="false">
+            <button id="load-btn" class="primary">Load</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="example-description" id="example-description"></div>
+    </div>
+
+    <!-- Status Strip -->
+    <div class="status-strip">
+      <div class="status-item">
+        <div class="status-label">Current State</div>
+        <div class="status-value state-q" id="state-display">q0</div>
+      </div>
+      <div class="status-item">
+        <div class="status-label">Reading</div>
+        <div class="status-value state-q" id="read-display">—</div>
+      </div>
+      <div class="status-item">
+        <div class="status-label">Steps Taken</div>
+        <div class="status-value" id="step-display">0</div>
+      </div>
+      <div class="status-item">
+        <div class="status-label">Machine Status</div>
+        <div class="status-value state-ready" id="status-display">Ready</div>
+      </div>
+    </div>
+
+    <!-- Tape -->
+    <div class="card">
+      <div class="card-head">
+        <h3>The Tape</h3>
+        <span class="card-tag">Read · Write · Move</span>
+      </div>
+      <div class="tape-wrap">
+        <div class="tape-label">
+          <span>Symbols on tape · blank cells shown as <code style="font-family:var(--font-mono);color:var(--cream-mute)">_</code></span>
+          <span class="head-pos" id="head-pos">Head @ position 0</span>
+        </div>
+        <div class="tape-container">
+          <div class="tape-pointer">▼</div>
+          <div class="tape" id="tape"></div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls-row">
+        <button id="step-btn" class="primary">▸ Step</button>
+        <button id="run-btn">▶ Run</button>
+        <button id="pause-btn" disabled>❚❚ Pause</button>
+        <button id="reset-btn" class="ghost">↺ Reset</button>
+
+        <div class="speed-control">
+          <label for="speed-slider">Speed</label>
+          <input type="range" id="speed-slider" min="1" max="10" value="5">
+          <span class="speed-value" id="speed-value">5</span>
+        </div>
+      </div>
+
+      <div id="halt-banner-slot"></div>
+    </div>
+
+    <!-- State Diagram -->
+    <div class="card">
+      <div class="card-head">
+        <h3>State Diagram</h3>
+        <span class="card-tag" id="diagram-count">— states</span>
+      </div>
+      <div class="state-diagram-wrap">
+        <svg class="state-diagram-svg" id="state-diagram" viewBox="0 0 720 520" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="sd-legend">
+        <span class="sd-legend-item"><span class="sd-legend-swatch" style="border-color: var(--amber);"></span> Start</span>
+        <span class="sd-legend-item" style="color: var(--emerald);"><span class="sd-legend-swatch double" style="border-color: var(--emerald);"></span> <span style="color: var(--cream-mute);">Accept</span></span>
+        <span class="sd-legend-item" style="color: var(--crimson);"><span class="sd-legend-swatch double" style="border-color: var(--crimson);"></span> <span style="color: var(--cream-mute);">Reject</span></span>
+        <span class="sd-legend-item"><span class="sd-legend-swatch" style="background: var(--amber); border-color: var(--amber);"></span> Current</span>
+        <span class="sd-legend-item">Labels: <code>read / write , move</code></span>
+      </div>
+    </div>
+
+    <!-- Info Grid -->
+    <div class="info-grid">
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Transition Function δ</h3>
+          <span class="card-tag" id="transition-count">— rules</span>
+        </div>
+        <table class="transitions-table" id="transitions-table">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>Read</th>
+              <th></th>
+              <th>Next</th>
+              <th>Write</th>
+              <th>Move</th>
+            </tr>
+          </thead>
+          <tbody id="transitions-body"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Execution Log</h3>
+          <span class="card-tag">Step-by-step trace</span>
+        </div>
+        <div class="log" id="log">
+          <div class="log-empty">No steps yet. Click <strong style="color:var(--amber)">Step</strong> or <strong style="color:var(--amber)">Run</strong> to begin.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════ FORMAL DEFINITION ═══════════ -->
+  <div class="section-head">
+    <span class="section-num">§ III</span>
+    <h2>The Formal <em>Seven-Tuple</em></h2>
+  </div>
+
+  <div class="card">
+    <p style="color:var(--cream-dim); font-size:0.98rem; margin-bottom: 0.5rem;">A deterministic Turing machine is formally defined as a <strong style="color:var(--cream)">7-tuple</strong>. Every example in this simulator is one of these objects.</p>
+    <div class="tuple">
+      <div class="tuple-eq">M = <span class="brace">(</span> Q , Σ , Γ , δ , q<sub>0</sub> , q<sub>accept</sub> , q<sub>reject</sub> <span class="brace">)</span></div>
+      <dl>
+        <dt>Q</dt>         <dd><b>Finite set of states</b> — every place the control can be in, such as <code style="font-family:var(--font-mono);color:var(--amber)">q0</code>, <code style="font-family:var(--font-mono);color:var(--amber)">q1</code>.</dd>
+        <dt>Σ (Sigma)</dt> <dd><b>Input alphabet</b> — the symbols a user is allowed to feed the machine. Does not include the blank.</dd>
+        <dt>Γ (Gamma)</dt> <dd><b>Tape alphabet</b> — everything the tape may contain, including the blank <code style="font-family:var(--font-mono);color:var(--amber)">_</code> and any auxiliary marks.</dd>
+        <dt>δ (delta)</dt> <dd><b>Transition function</b> — the rulebook: <code style="font-family:var(--font-mono);color:var(--amber)">δ : Q × Γ → Q × Γ × {L, R}</code>.</dd>
+        <dt>q<sub>0</sub></dt>      <dd><b>Start state</b> — where the machine begins execution.</dd>
+        <dt>q<sub>accept</sub></dt> <dd><b>Accept state</b> — halts and the input is said to be <em>accepted</em>.</dd>
+        <dt>q<sub>reject</sub></dt> <dd><b>Reject state</b> — halts and the input is <em>rejected</em>.</dd>
+      </dl>
+    </div>
+  </div>
+
+  <!-- ═══════════ COMPONENTS ═══════════ -->
+  <div class="section-head">
+    <span class="section-num">§ IV</span>
+    <h2>The Four <em>Working Parts</em></h2>
+  </div>
+
+  <div class="theory-grid">
+    <div class="theory-card">
+      <div class="ordinal">i</div>
+      <h3>The Tape</h3>
+      <p>An infinite sequence of cells, extending both directions. Each cell holds one symbol from the tape alphabet Γ, or a blank. This is both the machine's <em>input</em> and its <em>memory</em>.</p>
+    </div>
+    <div class="theory-card">
+      <div class="ordinal">ii</div>
+      <h3>The Head</h3>
+      <p>A single reader/writer that sits over exactly one cell. On each step it can read, overwrite that cell, then shift one position left or right. The amber triangle in the simulator shows where it is.</p>
+    </div>
+    <div class="theory-card">
+      <div class="ordinal">iii</div>
+      <h3>The Control</h3>
+      <p>A finite set of states that remembers what the machine is "doing right now". It is not memory in the usual sense — it is a tiny brain that decides the next move based on the current state and the symbol being read.</p>
+    </div>
+    <div class="theory-card">
+      <div class="ordinal">iv</div>
+      <h3>The Rules (δ)</h3>
+      <p>A lookup table. Given <code>(current state, read symbol)</code> it returns <code>(new state, symbol to write, direction to move)</code>. This is the entire program the machine knows.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ EXECUTION CYCLE ═══════════ -->
+  <div class="section-head">
+    <span class="section-num">§ V</span>
+    <h2>One <em>Cycle</em> of Execution</h2>
+  </div>
+
+  <ol class="explain-list">
+    <li>
+      <h4>Read the symbol under the head</h4>
+      <p>The head observes exactly one cell of the tape. Whatever symbol lives there is the input to the rule lookup.</p>
+    </li>
+    <li>
+      <h4>Consult the transition function δ</h4>
+      <p>Using <code>(current state, symbol read)</code> as a key, find the matching rule. If no rule exists for that pair, the machine <em>halts and rejects</em>.</p>
+    </li>
+    <li>
+      <h4>Write the new symbol</h4>
+      <p>Replace the symbol in the current cell with the one the rule specifies. Often the machine writes the same symbol back — which is equivalent to leaving it alone.</p>
+    </li>
+    <li>
+      <h4>Change the state</h4>
+      <p>Update the control to the next state indicated by the rule. This is how the machine remembers what phase of the computation it is in.</p>
+    </li>
+    <li>
+      <h4>Move the head one cell</h4>
+      <p>Shift exactly one position left (<code>L</code>) or right (<code>R</code>). The head never stays still and never jumps — single steps only.</p>
+    </li>
+    <li>
+      <h4>Loop — or halt</h4>
+      <p>If the new state is <code>q_accept</code> or <code>q_reject</code>, the machine stops. Otherwise, return to step one and repeat. A machine may also loop forever, which is why some problems are <em>undecidable</em>.</p>
+    </li>
+  </ol>
+
+  <!-- ═══════════ HOW TO PRESENT ═══════════ -->
+  <div class="section-head">
+    <span class="section-num">§ VI</span>
+    <h2>How to <em>Present</em> This to Your Class</h2>
+  </div>
+
+  <div class="card">
+    <p style="color:var(--cream-dim); font-size: 0.98rem;">A suggested script for a three-to-five minute demo. Works equally well for a classmate or a professor.</p>
+  </div>
+
+  <ol class="explain-list">
+    <li>
+      <h4>Begin with the big idea</h4>
+      <p>"A Turing machine is the simplest device that can compute anything a computer can. Everything on my laptop — from a browser to an AI model — is, in theory, just a very fast Turing machine."</p>
+    </li>
+    <li>
+      <h4>Introduce the parts on screen</h4>
+      <p>Point to the <strong>tape</strong>, the <strong>head</strong> (amber triangle), the <strong>state</strong> box, and the <strong>transition table</strong>. Say: "These four things — and only these four things — run the whole computation."</p>
+    </li>
+    <li>
+      <h4>Pick a simple example first</h4>
+      <p>Start with <strong>Binary Increment</strong> and input <code>1011</code>. Predict the output (<code>1100</code>). Press <strong>Step</strong> a few times. Read the execution log aloud: "It moved right because the rule <code>δ(q0, 1) = (q0, 1, R)</code> said so."</p>
+    </li>
+    <li>
+      <h4>Emphasise the transition function</h4>
+      <p>Point at the highlighted row in the transition table as it fires. This is the moment the audience understands that "programming" a Turing machine just means writing this table.</p>
+    </li>
+    <li>
+      <h4>Show acceptance and rejection</h4>
+      <p>Switch to <strong>a^n b^n Recognizer</strong>. Load <code>aaabbb</code> — it accepts. Then try <code>aabbb</code> — it rejects. This is the clearest demonstration of a machine <em>deciding a language</em>.</p>
+    </li>
+    <li>
+      <h4>Close with the Church–Turing thesis</h4>
+      <p>"Every algorithm that can possibly be computed can be computed by a machine like this. That is why we study it — this is the definition of computation itself."</p>
+    </li>
+  </ol>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer>
+    <div class="asterism">✦ ✦ ✦</div>
+    <div>Built for the study of computation · single-tape deterministic model</div>
+  </footer>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--                    JAVASCRIPT LOGIC                        -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════════
+   EXAMPLE MACHINES — each is a complete 7-tuple specification
+   ════════════════════════════════════════════════════════════ */
+const EXAMPLES = {
+
+  /* ──── 1. BINARY INCREMENT ──── */
+  binaryIncrement: {
+    name: "Binary Increment",
+    description: "Adds 1 to a binary number. Scans right to find the end, then travels left propagating the carry. The value grows by exactly one.",
+    inputExamples: ["1011", "111", "0", "10110"],
+    inputAlphabet: ['0', '1'],
+    tapeAlphabet: ['0', '1', '_'],
+    startState: 'q0',
+    acceptStates: ['qA'],
+    rejectStates: ['qR'],
+    transitions: {
+      'q0|0': { next: 'q0', write: '0', move: 'R', note: 'skip right over digits' },
+      'q0|1': { next: 'q0', write: '1', move: 'R', note: 'skip right over digits' },
+      'q0|_': { next: 'q1', write: '_', move: 'L', note: 'end of input, turn around' },
+      'q1|0': { next: 'qA', write: '1', move: 'R', note: 'found a 0 — flip to 1 and halt' },
+      'q1|1': { next: 'q1', write: '0', move: 'L', note: 'carry — flip to 0, continue left' },
+      'q1|_': { next: 'qA', write: '1', move: 'R', note: 'carry past start — write new leading 1' }
+    }
+  },
+
+  /* ──── 2. a^n b^n RECOGNIZER ──── */
+  anbn: {
+    name: "a^n b^n Recognizer",
+    description: "Accepts exactly the strings with some number of a's followed by the same number of b's (including the empty string). Rejects everything else. This is a classic non-regular language.",
+    inputExamples: ["aabb", "aaabbb", "ab", "aab", "abab", ""],
+    inputAlphabet: ['a', 'b'],
+    tapeAlphabet: ['a', 'b', 'X', 'Y', '_'],
+    startState: 'q0',
+    acceptStates: ['qA'],
+    rejectStates: ['qR'],
+    transitions: {
+      'q0|a': { next: 'q1', write: 'X', move: 'R', note: 'mark an a as consumed' },
+      'q0|Y': { next: 'q3', write: 'Y', move: 'R', note: 'no a left, verify only Ys remain' },
+      'q0|_': { next: 'qA', write: '_', move: 'R', note: 'empty string is accepted' },
+      'q1|a': { next: 'q1', write: 'a', move: 'R', note: 'pass over remaining a' },
+      'q1|Y': { next: 'q1', write: 'Y', move: 'R', note: 'pass over crossed b' },
+      'q1|b': { next: 'q2', write: 'Y', move: 'L', note: 'match b, cross it, return' },
+      'q2|a': { next: 'q2', write: 'a', move: 'L', note: 'return over a' },
+      'q2|Y': { next: 'q2', write: 'Y', move: 'L', note: 'return over Y' },
+      'q2|X': { next: 'q0', write: 'X', move: 'R', note: 'back at a marker, restart' },
+      'q3|Y': { next: 'q3', write: 'Y', move: 'R', note: 'verify Y' },
+      'q3|_': { next: 'qA', write: '_', move: 'R', note: 'all matched — accept' }
+    }
+  },
+
+  /* ──── 3. PALINDROME CHECKER (binary) ──── */
+  palindrome: {
+    name: "Palindrome Checker",
+    description: "Accepts binary strings that read the same forwards and backwards. It erases the leftmost symbol, remembers it in the state, walks to the rightmost symbol, and checks whether they match — then repeats.",
+    inputExamples: ["1001", "10101", "110", "0110", "1", ""],
+    inputAlphabet: ['0', '1'],
+    tapeAlphabet: ['0', '1', '_'],
+    startState: 'q0',
+    acceptStates: ['qA'],
+    rejectStates: ['qR'],
+    transitions: {
+      'q0|0': { next: 'q1', write: '_', move: 'R', note: 'remember leftmost was 0' },
+      'q0|1': { next: 'q2', write: '_', move: 'R', note: 'remember leftmost was 1' },
+      'q0|_': { next: 'qA', write: '_', move: 'R', note: 'empty / all matched — accept' },
+      'q1|0': { next: 'q1', write: '0', move: 'R', note: 'walk right' },
+      'q1|1': { next: 'q1', write: '1', move: 'R', note: 'walk right' },
+      'q1|_': { next: 'q3', write: '_', move: 'L', note: 'reached end, step back' },
+      'q2|0': { next: 'q2', write: '0', move: 'R', note: 'walk right' },
+      'q2|1': { next: 'q2', write: '1', move: 'R', note: 'walk right' },
+      'q2|_': { next: 'q4', write: '_', move: 'L', note: 'reached end, step back' },
+      'q3|0': { next: 'q5', write: '_', move: 'L', note: 'rightmost matches 0 — erase, continue' },
+      'q3|1': { next: 'qR', write: '1', move: 'L', note: 'mismatch — reject' },
+      'q3|_': { next: 'qA', write: '_', move: 'R', note: 'single symbol remained — accept' },
+      'q4|0': { next: 'qR', write: '0', move: 'L', note: 'mismatch — reject' },
+      'q4|1': { next: 'q5', write: '_', move: 'L', note: 'rightmost matches 1 — erase, continue' },
+      'q4|_': { next: 'qA', write: '_', move: 'R', note: 'single symbol remained — accept' },
+      'q5|0': { next: 'q5', write: '0', move: 'L', note: 'walk back to start' },
+      'q5|1': { next: 'q5', write: '1', move: 'L', note: 'walk back to start' },
+      'q5|_': { next: 'q0', write: '_', move: 'R', note: 'at start — recurse' }
+    }
+  },
+
+  /* ──── 4. UNARY ADDITION ──── */
+  unaryAddition: {
+    name: "Unary Addition",
+    description: "Computes sum of two unary numbers joined by '+'. Example: 111+11 becomes 11111 (three plus two). The plus sign is replaced by a 1, and one 1 is removed from the far end.",
+    inputExamples: ["111+11", "1+1", "1111+111", "+1", "11+"],
+    inputAlphabet: ['1', '+'],
+    tapeAlphabet: ['1', '+', '_'],
+    startState: 'q0',
+    acceptStates: ['qA'],
+    rejectStates: ['qR'],
+    transitions: {
+      'q0|1': { next: 'q0', write: '1', move: 'R', note: 'skip over first operand' },
+      'q0|+': { next: 'q1', write: '1', move: 'R', note: 'turn + into 1' },
+      'q0|_': { next: 'qA', write: '_', move: 'R', note: 'no + found — done' },
+      'q1|1': { next: 'q1', write: '1', move: 'R', note: 'skip over second operand' },
+      'q1|_': { next: 'q2', write: '_', move: 'L', note: 'reached end, step back' },
+      'q2|1': { next: 'qA', write: '_', move: 'R', note: 'erase last 1 — sum complete' },
+      'q2|+': { next: 'qA', write: '_', move: 'R', note: 'malformed but terminate' },
+      'q2|_': { next: 'qA', write: '_', move: 'R', note: 'degenerate case — terminate' }
+    }
+  }
+
+};
+
+/* ════════════════════════════════════════════════════════════
+   TURING MACHINE ENGINE
+   ════════════════════════════════════════════════════════════ */
+class TuringMachine {
+  constructor(spec) {
+    this.spec        = spec;
+    this.blank       = '_';
+    this.tape        = [];
+    this.head        = 0;
+    this.state       = spec.startState;
+    this.stepCount   = 0;
+    this.history     = [];
+    this.status      = 'ready';
+    this.lastTransitionKey = null;
+    this.lastWrittenIndex  = null;
+  }
+
+  loadInput(input) {
+    this.tape = input.length > 0 ? input.split('') : [this.blank];
+    this.head = 0;
+    this.state = this.spec.startState;
+    this.stepCount = 0;
+    this.history = [];
+    this.status = 'ready';
+    this.lastTransitionKey = null;
+    this.lastWrittenIndex = null;
+  }
+
+  readSymbol() {
+    if (this.head < 0 || this.head >= this.tape.length) return this.blank;
+    return this.tape[this.head];
+  }
+
+  isHalted() {
+    return this.status === 'accepted' || this.status === 'rejected';
+  }
+
+  step() {
+    if (this.isHalted()) return null;
+
+    const symbol = this.readSymbol();
+    const key = this.state + '|' + symbol;
+    const rule = this.spec.transitions[key];
+
+    // No rule → reject
+    if (!rule) {
+      this.status = 'rejected';
+      const info = {
+        step: this.stepCount + 1,
+        fromState: this.state,
+        readSymbol: symbol,
+        rule: null,
+        note: 'No rule defined for (' + this.state + ', ' + symbol + ') — reject',
+        halt: 'rejected'
+      };
+      this.history.push(info);
+      this.lastTransitionKey = null;
+      return info;
+    }
+
+    const fromState = this.state;
+    const fromHead  = this.head;
+
+    // Ensure we have a cell at current head, writing may grow tape
+    if (this.head >= this.tape.length) {
+      while (this.tape.length <= this.head) this.tape.push(this.blank);
+    }
+    if (this.head < 0) {
+      const n = -this.head;
+      this.tape = new Array(n).fill(this.blank).concat(this.tape);
+      this.head = 0;
+    }
+
+    this.tape[this.head] = rule.write;
+    this.lastWrittenIndex = this.head;
+
+    this.state = rule.next;
+
+    if (rule.move === 'L') this.head--;
+    else if (rule.move === 'R') this.head++;
+
+    // Extend tape after move if needed
+    if (this.head < 0) {
+      this.tape.unshift(this.blank);
+      this.head = 0;
+      this.lastWrittenIndex = (this.lastWrittenIndex ?? 0) + 1;
+    } else if (this.head >= this.tape.length) {
+      this.tape.push(this.blank);
+    }
+
+    this.stepCount += 1;
+    this.lastTransitionKey = key;
+
+    const info = {
+      step: this.stepCount,
+      fromState,
+      readSymbol: symbol,
+      rule,
+      toState: rule.next,
+      wrote: rule.write,
+      move: rule.move,
+      note: rule.note,
+      fromHead
+    };
+
+    if (this.spec.acceptStates.includes(this.state)) {
+      this.status = 'accepted';
+      info.halt = 'accepted';
+    } else if (this.spec.rejectStates.includes(this.state)) {
+      this.status = 'rejected';
+      info.halt = 'rejected';
+    } else {
+      this.status = 'running';
+    }
+
+    this.history.push(info);
+    return info;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   UI CONTROLLER
+   ════════════════════════════════════════════════════════════ */
+const ui = (() => {
+  // DOM refs
+  const el = (id) => document.getElementById(id);
+  const selectEl       = el('example-select');
+  const inputEl        = el('input-field');
+  const loadBtn        = el('load-btn');
+  const stepBtn        = el('step-btn');
+  const runBtn         = el('run-btn');
+  const pauseBtn       = el('pause-btn');
+  const resetBtn       = el('reset-btn');
+  const speedSlider    = el('speed-slider');
+  const speedValue     = el('speed-value');
+  const tapeEl         = el('tape');
+  const stateDisplay   = el('state-display');
+  const readDisplay    = el('read-display');
+  const stepDisplay    = el('step-display');
+  const statusDisplay  = el('status-display');
+  const headPosEl      = el('head-pos');
+  const descEl         = el('example-description');
+  const transBody      = el('transitions-body');
+  const transCount     = el('transition-count');
+  const logEl          = el('log');
+  const haltSlot       = el('halt-banner-slot');
+  const diagramSvg     = el('state-diagram');
+  const diagramCount   = el('diagram-count');
+
+  const VISIBLE_CELLS = 13;   // odd so center is head
+  const HALF          = Math.floor(VISIBLE_CELLS / 2);
+
+  let tm = null;
+  let currentKey = 'binaryIncrement';
+  let runInterval = null;
+
+  /* ─── initial setup ─── */
+  function init() {
+    // Populate example select
+    Object.keys(EXAMPLES).forEach(k => {
+      // options already in HTML
+    });
+
+    selectEl.addEventListener('change', () => {
+      currentKey = selectEl.value;
+      const ex = EXAMPLES[currentKey];
+      inputEl.value = ex.inputExamples[0] ?? '';
+      loadExample(currentKey);
+    });
+
+    loadBtn.addEventListener('click', handleLoad);
+    inputEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); handleLoad(); }
+    });
+
+    stepBtn.addEventListener('click', handleStep);
+    runBtn.addEventListener('click', handleRun);
+    pauseBtn.addEventListener('click', handlePause);
+    resetBtn.addEventListener('click', handleReset);
+
+    speedSlider.addEventListener('input', () => {
+      speedValue.textContent = speedSlider.value;
+      if (runInterval) {
+        // restart interval with new speed
+        clearInterval(runInterval);
+        runInterval = null;
+        handleRun();
+      }
+    });
+
+    // Keyboard
+    document.addEventListener('keydown', e => {
+      if (e.target === inputEl || e.target === selectEl) return;
+      if (e.key === ' ' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleStep();
+      } else if (e.key === 'r' || e.key === 'R') {
+        handleReset();
+      }
+    });
+
+    // Initial load
+    currentKey = selectEl.value;
+    inputEl.value = EXAMPLES[currentKey].inputExamples[0] ?? '';
+    loadExample(currentKey);
+  }
+
+  /* ─── load a fresh example spec ─── */
+  function loadExample(key) {
+    stopRun();
+    const spec = EXAMPLES[key];
+    tm = new TuringMachine(spec);
+    tm.loadInput(inputEl.value);
+    renderExampleDescription(spec);
+    renderTransitionTable(spec);
+    renderStateDiagram(spec);
+    render();
+  }
+
+  /* ─── (re)load input on the current machine ─── */
+  function handleLoad() {
+    stopRun();
+    if (!tm) return;
+    tm.loadInput(inputEl.value);
+    clearHaltBanner();
+    render();
+  }
+
+  function handleStep() {
+    if (!tm || tm.isHalted()) return;
+    const info = tm.step();
+    if (info) addLogEntry(info);
+    render();
+    if (tm.isHalted()) showHaltBanner();
+  }
+
+  function handleRun() {
+    if (!tm || tm.isHalted()) return;
+    if (runInterval) return;
+    runBtn.disabled = true;
+    pauseBtn.disabled = false;
+    stepBtn.disabled = true;
+    loadBtn.disabled = true;
+    const speed = parseInt(speedSlider.value, 10);
+    // speed 1 = 800ms, speed 10 = 60ms
+    const delay = Math.round(850 - (speed - 1) * (790 / 9));
+    runInterval = setInterval(() => {
+      if (!tm || tm.isHalted()) {
+        stopRun();
+        if (tm && tm.isHalted()) showHaltBanner();
+        return;
+      }
+      const info = tm.step();
+      if (info) addLogEntry(info);
+      render();
+      if (tm.isHalted()) {
+        stopRun();
+        showHaltBanner();
+      }
+    }, delay);
+  }
+
+  function handlePause() { stopRun(); }
+  function stopRun() {
+    if (runInterval) {
+      clearInterval(runInterval);
+      runInterval = null;
+    }
+    runBtn.disabled = false;
+    pauseBtn.disabled = true;
+    stepBtn.disabled = false;
+    loadBtn.disabled = false;
+  }
+
+  function handleReset() {
+    stopRun();
+    if (!tm) return;
+    tm.loadInput(inputEl.value);
+    clearLog();
+    clearHaltBanner();
+    render();
+  }
+
+  /* ─── rendering ─── */
+  function render() {
+    renderTape();
+    renderStatus();
+    highlightActiveTransition();
+    highlightActiveState();
+    updateButtonStates();
+  }
+
+  function renderTape() {
+    tapeEl.innerHTML = '';
+    if (!tm) return;
+
+    for (let offset = -HALF; offset <= HALF; offset++) {
+      const pos = tm.head + offset;
+      const symbol = (pos >= 0 && pos < tm.tape.length) ? tm.tape[pos] : '_';
+
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if (symbol === '_') cell.classList.add('blank');
+      if (offset === 0)   cell.classList.add('head');
+      cell.textContent = symbol;
+
+      // index label above the cell
+      const idx = document.createElement('span');
+      idx.className = 'cell-index';
+      idx.textContent = pos;
+      cell.appendChild(idx);
+
+      // flash-write animation if this was just written
+      if (tm.lastWrittenIndex === pos && tm.stepCount > 0) {
+        cell.classList.add('just-written');
+      }
+
+      tapeEl.appendChild(cell);
+    }
+  }
+
+  function renderStatus() {
+    if (!tm) return;
+
+    // State
+    stateDisplay.textContent = tm.state;
+    stateDisplay.className = 'status-value ' + stateClass(tm);
+
+    // Reading
+    const r = tm.readSymbol();
+    readDisplay.textContent = r;
+
+    // Step count
+    stepDisplay.textContent = tm.stepCount;
+
+    // Status
+    const s = tm.status;
+    const label = {
+      'ready'   : 'Ready',
+      'running' : 'Running',
+      'accepted': 'Accepted ✓',
+      'rejected': 'Rejected ✗'
+    }[s] || s;
+    statusDisplay.textContent = label;
+    statusDisplay.className = 'status-value ' + statusClass(s);
+
+    // Head position
+    headPosEl.textContent = 'Head @ position ' + tm.head;
+  }
+
+  function stateClass(tm) {
+    if (tm.status === 'accepted') return 'state-ok';
+    if (tm.status === 'rejected') return 'state-no';
+    if (tm.status === 'running')  return 'state-run';
+    return 'state-q';
+  }
+
+  function statusClass(s) {
+    if (s === 'accepted') return 'state-ok';
+    if (s === 'rejected') return 'state-no';
+    if (s === 'running')  return 'state-run';
+    return 'state-ready';
+  }
+
+  function renderExampleDescription(spec) {
+    const alpha = spec.inputAlphabet.map(a => `<code>${a}</code>`).join(' ');
+    const ex = spec.inputExamples.slice(0, 3).map(e => `<code>${e || '(empty)'}</code>`).join(' · ');
+    descEl.innerHTML = `
+      <strong>${spec.name}.</strong> ${spec.description}
+      <div class="alphabet"><span style="color:var(--cream-mute); margin-right:0.5rem; text-transform:uppercase; letter-spacing:0.1em; font-size:0.7rem;">Input alphabet Σ:</span> ${alpha}</div>
+      <div class="alphabet"><span style="color:var(--cream-mute); margin-right:0.5rem; text-transform:uppercase; letter-spacing:0.1em; font-size:0.7rem;">Try:</span> ${ex}</div>
+    `;
+  }
+
+  function renderTransitionTable(spec) {
+    transBody.innerHTML = '';
+    const keys = Object.keys(spec.transitions);
+    transCount.textContent = keys.length + ' rules';
+
+    // Sort by state then symbol for readability
+    keys.sort((a, b) => {
+      const [sa, ya] = a.split('|');
+      const [sb, yb] = b.split('|');
+      if (sa !== sb) return sa.localeCompare(sb);
+      return ya.localeCompare(yb);
+    });
+
+    keys.forEach(k => {
+      const rule = spec.transitions[k];
+      const [st, sy] = k.split('|');
+      const tr = document.createElement('tr');
+      tr.dataset.key = k;
+      tr.innerHTML = `
+        <td class="state">${st}</td>
+        <td class="symbol">${sy}</td>
+        <td class="arrow">→</td>
+        <td class="state">${rule.next}</td>
+        <td class="symbol">${rule.write}</td>
+        <td class="move">${rule.move}</td>
+      `;
+      transBody.appendChild(tr);
+    });
+  }
+
+  function highlightActiveTransition() {
+    const rows = transBody.querySelectorAll('tr');
+    rows.forEach(r => r.classList.remove('active-transition'));
+    if (tm && tm.lastTransitionKey) {
+      const active = transBody.querySelector(`tr[data-key="${tm.lastTransitionKey}"]`);
+      if (active) {
+        active.classList.add('active-transition');
+        // Scroll the transitions table itself only, never the whole page.
+        // The <table> element is the scroll container (display:block + overflow-y:auto).
+        const container = document.getElementById('transitions-table');
+        if (container) {
+          const rowTop = active.offsetTop;
+          const rowBottom = rowTop + active.offsetHeight;
+          const viewTop = container.scrollTop;
+          const viewBottom = viewTop + container.clientHeight;
+          if (rowTop < viewTop) {
+            container.scrollTop = rowTop;
+          } else if (rowBottom > viewBottom) {
+            container.scrollTop = rowBottom - container.clientHeight;
+          }
+        }
+      }
+    }
+  }
+
+  /* ─── STATE DIAGRAM ─── */
+  function renderStateDiagram(spec) {
+    // Collect every state that appears anywhere in the spec
+    const allStates = new Set();
+    allStates.add(spec.startState);
+    spec.acceptStates.forEach(s => allStates.add(s));
+    spec.rejectStates.forEach(s => allStates.add(s));
+    Object.keys(spec.transitions).forEach(key => {
+      const from = key.split('|')[0];
+      allStates.add(from);
+      allStates.add(spec.transitions[key].next);
+    });
+
+    // Rank sort: start first, normals, accept, reject — puts terminals together
+    const stateList = Array.from(allStates);
+    const rank = s => {
+      if (s === spec.startState) return 0;
+      if (spec.acceptStates.includes(s)) return 2;
+      if (spec.rejectStates.includes(s)) return 3;
+      return 1;
+    };
+    stateList.sort((a, b) => {
+      const ra = rank(a), rb = rank(b);
+      if (ra !== rb) return ra - rb;
+      return a.localeCompare(b);
+    });
+
+    diagramCount.textContent = stateList.length + ' states';
+
+    // Circular layout — start state placed at left (angle = π)
+    const W = 720, H = 520;
+    const cx = W / 2, cy = H / 2;
+    const nodeR = 26;
+    const n = stateList.length;
+    // Shrink layout radius when many nodes to leave room for self-loops/labels
+    const layoutR = Math.min(W, H) / 2 - nodeR - (n >= 8 ? 60 : 50);
+
+    const nodes = stateList.map((s, i) => {
+      // Angle π = left; step CCW in math (CW on screen because y flips)
+      const angle = Math.PI + (i / n) * 2 * Math.PI;
+      return {
+        id: s,
+        x: cx + layoutR * Math.cos(angle),
+        y: cy + layoutR * Math.sin(angle),
+        type: s === spec.startState ? 'start' :
+              spec.acceptStates.includes(s) ? 'accept' :
+              spec.rejectStates.includes(s) ? 'reject' : 'normal'
+      };
+    });
+    const nodeById = {};
+    nodes.forEach(nd => { nodeById[nd.id] = nd; });
+
+    // Group transitions by (from, to) so parallel rules share an edge
+    const edgeMap = new Map();
+    Object.keys(spec.transitions).forEach(key => {
+      const [from, read] = key.split('|');
+      const rule = spec.transitions[key];
+      const to = rule.next;
+      const edgeKey = from + '\u2192' + to;
+      if (!edgeMap.has(edgeKey)) edgeMap.set(edgeKey, { from, to, labels: [] });
+      edgeMap.get(edgeKey).labels.push({
+        read, write: rule.write, move: rule.move, transKey: key
+      });
+    });
+    const edges = Array.from(edgeMap.values());
+
+    // Build SVG as one string, then inject
+    let svg = '';
+
+    // Markers for arrowheads
+    svg += `
+      <defs>
+        <marker id="sd-arrow" viewBox="0 0 10 10" refX="9" refY="5"
+                markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a3226"/>
+        </marker>
+        <marker id="sd-arrow-active" viewBox="0 0 10 10" refX="9" refY="5"
+                markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#e8a951"/>
+        </marker>
+      </defs>
+    `;
+
+    // Start-state entry arrow (pointing inward from outside the circle)
+    const startNode = nodeById[spec.startState];
+    const outAngleStart = Math.atan2(startNode.y - cy, startNode.x - cx);
+    const saFromX = startNode.x + nodeR * 2.1 * Math.cos(outAngleStart);
+    const saFromY = startNode.y + nodeR * 2.1 * Math.sin(outAngleStart);
+    const saToX   = startNode.x + (nodeR + 4) * Math.cos(outAngleStart);
+    const saToY   = startNode.y + (nodeR + 4) * Math.sin(outAngleStart);
+    const labelDx = 16 * Math.cos(outAngleStart);
+    const labelDy = 16 * Math.sin(outAngleStart);
+    svg += `
+      <line x1="${saFromX}" y1="${saFromY}" x2="${saToX}" y2="${saToY}"
+            stroke="#e8a951" stroke-width="2" marker-end="url(#sd-arrow-active)" />
+      <text class="sd-start-label"
+            x="${saFromX + labelDx}" y="${saFromY + labelDy + 4}"
+            text-anchor="middle">START</text>
+    `;
+
+    // Edges
+    edges.forEach(edge => {
+      const from = nodeById[edge.from];
+      const to   = nodeById[edge.to];
+      const labelParts = edge.labels.map(l => `${l.read}/${l.write},${l.move}`);
+      const transKeys = edge.labels.map(l => l.transKey).join(',');
+
+      if (from.id === to.id) {
+        // Self-loop: arc pointing away from diagram center
+        const outA = Math.atan2(from.y - cy, from.x - cx);
+        const spread = 0.32;
+        const a1 = outA + spread;
+        const a2 = outA - spread;
+        const x1 = from.x + nodeR * Math.cos(a1);
+        const y1 = from.y + nodeR * Math.sin(a1);
+        const x2 = from.x + nodeR * Math.cos(a2);
+        const y2 = from.y + nodeR * Math.sin(a2);
+        const cpDist = nodeR + 42;
+        const cpSpread = 0.55;
+        const cpx1 = from.x + cpDist * Math.cos(outA + cpSpread);
+        const cpy1 = from.y + cpDist * Math.sin(outA + cpSpread);
+        const cpx2 = from.x + cpDist * Math.cos(outA - cpSpread);
+        const cpy2 = from.y + cpDist * Math.sin(outA - cpSpread);
+        const d = `M ${x1.toFixed(2)} ${y1.toFixed(2)} C ${cpx1.toFixed(2)} ${cpy1.toFixed(2)}, ${cpx2.toFixed(2)} ${cpy2.toFixed(2)}, ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+        svg += `<path class="sd-edge" d="${d}"
+                      data-trans-keys="${transKeys}"
+                      marker-end="url(#sd-arrow)" />`;
+        // Label at the peak of the loop, outward
+        const lblX = from.x + (cpDist + 14) * Math.cos(outA);
+        const lblY = from.y + (cpDist + 14) * Math.sin(outA);
+        svg += renderEdgeLabel(lblX, lblY, labelParts, transKeys);
+      } else {
+        // Curved edge between two distinct nodes — perpendicular offset gives auto opposite curves for A→B and B→A
+        const dx = to.x - from.x, dy = to.y - from.y;
+        const dist = Math.hypot(dx, dy);
+        const ux = dx / dist, uy = dy / dist;
+        const nx = -uy, ny = ux;    // perpendicular (CCW)
+        const curveAmt = 26;
+        const midX = (from.x + to.x) / 2 + nx * curveAmt;
+        const midY = (from.y + to.y) / 2 + ny * curveAmt;
+
+        // Start point: on `from` circle toward control point
+        const sdx = midX - from.x, sdy = midY - from.y;
+        const sdist = Math.hypot(sdx, sdy);
+        const sx = from.x + (sdx / sdist) * nodeR;
+        const sy = from.y + (sdy / sdist) * nodeR;
+
+        // End point: leave room for the arrowhead
+        const edx = midX - to.x, edy = midY - to.y;
+        const edist = Math.hypot(edx, edy);
+        const endOffset = nodeR + 3;
+        const ex = to.x + (edx / edist) * endOffset;
+        const ey = to.y + (edy / edist) * endOffset;
+
+        const d = `M ${sx.toFixed(2)} ${sy.toFixed(2)} Q ${midX.toFixed(2)} ${midY.toFixed(2)}, ${ex.toFixed(2)} ${ey.toFixed(2)}`;
+        svg += `<path class="sd-edge" d="${d}"
+                      data-trans-keys="${transKeys}"
+                      marker-end="url(#sd-arrow)" />`;
+
+        // Label near Bezier midpoint, pushed slightly further out
+        const bx = 0.25 * sx + 0.5 * midX + 0.25 * ex;
+        const by = 0.25 * sy + 0.5 * midY + 0.25 * ey;
+        const labelX = bx + nx * 11;
+        const labelY = by + ny * 11;
+        svg += renderEdgeLabel(labelX, labelY, labelParts, transKeys);
+      }
+    });
+
+    // Nodes drawn on top of edges
+    nodes.forEach(nd => {
+      svg += `<g class="sd-node ${nd.type}" data-state="${nd.id}">`;
+      svg += `<circle class="sd-node-circle" cx="${nd.x.toFixed(2)}" cy="${nd.y.toFixed(2)}" r="${nodeR}"/>`;
+      if (nd.type === 'accept' || nd.type === 'reject') {
+        svg += `<circle class="sd-node-inner" cx="${nd.x.toFixed(2)}" cy="${nd.y.toFixed(2)}" r="${nodeR - 5}"/>`;
+      }
+      svg += `<text class="sd-node-label" x="${nd.x.toFixed(2)}" y="${nd.y.toFixed(2)}">${nd.id}</text>`;
+      svg += `</g>`;
+    });
+
+    diagramSvg.innerHTML = svg;
+  }
+
+  function renderEdgeLabel(x, y, parts, transKeys) {
+    const lineHeight = 12;
+    const startY = y - (parts.length - 1) * lineHeight / 2;
+    const maxLen = parts.reduce((m, p) => Math.max(m, p.length), 0);
+    const rectW  = maxLen * 6.6 + 10;
+    const rectH  = parts.length * lineHeight + 4;
+    let s = `<g class="sd-edge-label-group" data-trans-keys="${transKeys}">`;
+    s += `<rect class="sd-edge-label-bg"
+                x="${(x - rectW / 2).toFixed(2)}"
+                y="${(startY - lineHeight / 2 - 2).toFixed(2)}"
+                width="${rectW.toFixed(2)}" height="${rectH.toFixed(2)}" rx="2"/>`;
+    parts.forEach((p, i) => {
+      s += `<text class="sd-edge-label" x="${x.toFixed(2)}" y="${(startY + i * lineHeight).toFixed(2)}">${escapeText(p)}</text>`;
+    });
+    s += `</g>`;
+    return s;
+  }
+
+  function escapeText(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function highlightActiveState() {
+    if (!tm || !diagramSvg) return;
+
+    // Clear previous highlights
+    diagramSvg.querySelectorAll('.sd-node.active').forEach(n => n.classList.remove('active'));
+    diagramSvg.querySelectorAll('.sd-edge.active').forEach(e => e.classList.remove('active'));
+    diagramSvg.querySelectorAll('.sd-edge-label.active').forEach(e => e.classList.remove('active'));
+    diagramSvg.querySelectorAll('.sd-edge-label-group.active').forEach(e => e.classList.remove('active'));
+    // Reset arrow markers
+    diagramSvg.querySelectorAll('.sd-edge').forEach(p => {
+      p.setAttribute('marker-end', 'url(#sd-arrow)');
+    });
+
+    // Highlight current state
+    const curNode = Array.from(diagramSvg.querySelectorAll('.sd-node'))
+      .find(n => n.dataset.state === tm.state);
+    if (curNode) curNode.classList.add('active');
+
+    // Highlight last transition edge + label + amber arrow
+    if (tm.lastTransitionKey) {
+      diagramSvg.querySelectorAll('.sd-edge').forEach(p => {
+        const keys = (p.dataset.transKeys || '').split(',');
+        if (keys.indexOf(tm.lastTransitionKey) !== -1) {
+          p.classList.add('active');
+          p.setAttribute('marker-end', 'url(#sd-arrow-active)');
+        }
+      });
+      diagramSvg.querySelectorAll('.sd-edge-label-group').forEach(g => {
+        const keys = (g.dataset.transKeys || '').split(',');
+        if (keys.indexOf(tm.lastTransitionKey) !== -1) {
+          g.classList.add('active');
+          g.querySelectorAll('.sd-edge-label').forEach(t => t.classList.add('active'));
+        }
+      });
+    }
+  }
+
+  function addLogEntry(info) {
+    // Clear "empty" placeholder if present
+    const emptyMsg = logEl.querySelector('.log-empty');
+    if (emptyMsg) logEl.innerHTML = '';
+
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    if (info.halt === 'accepted') entry.classList.add('halt-accept');
+    if (info.halt === 'rejected') entry.classList.add('halt-reject');
+
+    let body;
+    if (info.rule) {
+      body = `
+        δ(<span class="k">${info.fromState}</span>, <span class="v">${info.readSymbol}</span>)
+        → (<span class="k">${info.toState}</span>, <span class="v">${info.wrote}</span>, <span class="m">${info.move}</span>)
+        <br>
+        <span style="color:var(--cream-mute); font-size: 0.78rem;">${info.note ?? ''}</span>
+      `;
+    } else {
+      body = `
+        <span style="color:var(--crimson);">No rule for (<span class="k">${info.fromState}</span>, <span class="v">${info.readSymbol}</span>)</span>
+        <br>
+        <span style="color:var(--cream-mute); font-size: 0.78rem;">Machine halts and rejects.</span>
+      `;
+    }
+
+    if (info.halt === 'accepted') {
+      body += `<br><strong style="color:var(--emerald);">✓ Input accepted.</strong>`;
+    } else if (info.halt === 'rejected') {
+      body += `<br><strong style="color:var(--crimson);">✗ Input rejected.</strong>`;
+    }
+
+    entry.innerHTML = `
+      <div class="step-num">#${String(info.step).padStart(3, '0')}</div>
+      <div class="log-body">${body}</div>
+    `;
+
+    logEl.appendChild(entry);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function clearLog() {
+    logEl.innerHTML = '<div class="log-empty">No steps yet. Click <strong style="color:var(--amber)">Step</strong> or <strong style="color:var(--amber)">Run</strong> to begin.</div>';
+  }
+
+  function showHaltBanner() {
+    haltSlot.innerHTML = '';
+    if (!tm || !tm.isHalted()) return;
+    const banner = document.createElement('div');
+    banner.className = 'halt-banner ' + tm.status;
+    if (tm.status === 'accepted') {
+      banner.innerHTML = `
+        <span class="halt-icon">✓</span>
+        <div>
+          <strong>Accepted.</strong> The machine halted in state <code style="background:rgba(126,200,122,0.15);padding:1px 6px;border-radius:2px;">${tm.state}</code> after ${tm.stepCount} step${tm.stepCount === 1 ? '' : 's'}.
+        </div>
+      `;
+    } else {
+      banner.innerHTML = `
+        <span class="halt-icon">✗</span>
+        <div>
+          <strong>Rejected.</strong> The machine halted in state <code style="background:rgba(216,88,88,0.15);padding:1px 6px;border-radius:2px;">${tm.state}</code> after ${tm.stepCount} step${tm.stepCount === 1 ? '' : 's'}.
+        </div>
+      `;
+    }
+    haltSlot.appendChild(banner);
+  }
+
+  function clearHaltBanner() {
+    haltSlot.innerHTML = '';
+  }
+
+  function updateButtonStates() {
+    if (!tm) return;
+    const halted = tm.isHalted();
+    stepBtn.disabled = halted || runInterval != null;
+    runBtn.disabled  = halted || runInterval != null;
+    pauseBtn.disabled = runInterval == null;
+  }
+
+  return { init };
+})();
+
+/* ─── bootstrap ─── */
+document.addEventListener('DOMContentLoaded', ui.init);
+</script>
+
+</body>
+</html>
